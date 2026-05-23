@@ -36,6 +36,9 @@ services:
       - jenkins-home:/var/jenkins_home
       - ./jenkins/casc:/var/jenkins_home/casc:ro
       - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - default
+      - kind
 
   jenkins-agent:
     build:
@@ -43,7 +46,14 @@ services:
     profiles: ["agent"]
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - default
+      - kind
 
 volumes:
   jenkins-home:
   registry-data:
+
+networks:
+  kind:
+    external: true

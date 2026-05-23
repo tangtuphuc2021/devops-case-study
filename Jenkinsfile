@@ -20,7 +20,7 @@ pipeline {
   environment {
     APP_NAME = 'demo-app'
     IMAGE_TAG = 'pending'
-    DOCKER_BUILDKIT = '1'
+    DOCKER_BUILDKIT = '0'
   }
 
   stages {
@@ -38,9 +38,10 @@ pipeline {
         stage('Unit tests') {
           steps {
             dir('app') {
-              sh 'python -m pip install --upgrade pip'
-              sh 'python -m pip install -r requirements.txt -r requirements-dev.txt'
-              sh 'pytest tests --junitxml=pytest-report.xml'
+              sh 'python3 -m venv .venv'
+              sh '. .venv/bin/activate && python -m pip install --upgrade pip'
+              sh '. .venv/bin/activate && python -m pip install -r requirements.txt -r requirements-dev.txt'
+              sh '. .venv/bin/activate && pytest tests --junitxml=pytest-report.xml'
             }
           }
           post {
@@ -113,7 +114,6 @@ pipeline {
               --set image.tag=${IMAGE_TAG} \
               --set app.env=${DEPLOY_ENV} \
               --set app.version=${IMAGE_TAG} \
-              --atomic \
               --wait \
               --timeout 120s
 
@@ -134,7 +134,6 @@ pipeline {
 
             helm upgrade --install monitoring helm/monitoring \
               --namespace ${KUBE_NAMESPACE} \
-              --atomic \
               --wait \
               --timeout 180s
 

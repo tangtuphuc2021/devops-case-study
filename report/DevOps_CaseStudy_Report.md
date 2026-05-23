@@ -27,10 +27,10 @@ The `Jenkinsfile` is a multi-stage pipeline:
 3. Docker Build with BuildKit and immutable image tag.
 4. Image Push to local registry or authenticated external registry.
 5. Load the image into kind for local demos when enabled.
-6. Deploy to Kubernetes with `helm upgrade --install`, image overrides, environment overrides, `--atomic`, `--wait`, and rollout status verification.
+6. Deploy to Kubernetes with `helm upgrade --install`, image overrides, environment overrides, `--wait`, and rollout status verification.
 7. Deploy Prometheus and Grafana to Kubernetes with the `helm/monitoring` chart when enabled.
 
-Error handling is implemented with Helm `--atomic` for automatic rollback and `post { failure { ... } }`, which collects Kubernetes deployment, service, HPA, pod, and Helm release history to speed up troubleshooting. The pipeline disables concurrent builds to avoid two deployments racing on the same namespace.
+Error handling is implemented with explicit rollout checks and `post { failure { ... } }`, which collects Kubernetes deployment, service, HPA, pod, and Helm release history to speed up troubleshooting. The pipeline disables concurrent builds to avoid two deployments racing on the same namespace.
 
 Image versioning uses:
 
@@ -54,25 +54,28 @@ The primary Kubernetes deployment path uses the Helm chart in `helm/demo-app/`:
 
 The deployment uses a RollingUpdate strategy with `maxUnavailable: 0` and `maxSurge: 1` so a new pod must become ready before old capacity is removed. Readiness and liveness probes reduce the chance of routing traffic to unhealthy pods.
 
-This demo uses Helm in the Jenkins deployment stage because the pipeline needs repeatable releases, per-environment overrides, release history, and rollback support. `kubectl apply` is still useful for small manual tests, but Helm is a better fit for CI/CD because one command can install or upgrade the release and `--atomic` can automatically roll back when the deployment does not become healthy.
+This demo uses Helm in the Jenkins deployment stage because the pipeline needs repeatable releases, per-environment overrides, release history, and rollback support. `kubectl apply` is still useful for small manual tests, but Helm is a better fit for CI/CD because one command can install or upgrade the release while preserving revision history for rollback.
 
 ## 4. Rollback and Scaling
 
-Rollback:
+The app uses a Kubernetes RollingUpdate strategy with readiness probes. If a new deployment is unhealthy, Kubernetes does not route traffic to pods that are not ready. Rollback can be done manually after inspecting the failure.
 
-```bash
-helm rollback demo-app
-kubectl rollout status deployment/demo-app
-```
-
-For a specific revision:
+Rollback with Helm:
 
 ```bash
 helm history demo-app
 helm rollback demo-app <revision>
+kubectl rollout status deployment/demo-app
 ```
 
-In Jenkins, rollback is automatic during deployment because `helm upgrade --install` runs with `--atomic --wait --timeout 120s`. If new pods fail readiness checks or the deployment times out, Helm reverts the release to the previous working revision.
+Rollback with Kubernetes deployment history:
+
+```bash
+kubectl rollout history deployment/demo-app
+kubectl rollout undo deployment/demo-app
+```
+
+In Jenkins, `helm upgrade --install` runs with `--wait --timeout 120s`, then the pipeline checks `kubectl rollout status`. If the deployment fails, the failure block prints Helm history and Kubernetes diagnostics so the operator can roll back to the previous known-good revision.
 
 Scaling can be done manually:
 
@@ -144,57 +147,90 @@ kubectl get events --sort-by=.lastTimestamp
 
 ## 7. Run Demo
 
-Start app and monitoring:
+### Deploy to Kubernetes manually with Helm (app and monitoring)
+
+Create a local kind cluster if needed:
 
 ```bash
-docker compose up --build demo-app
+kind create cluster --name devops-demo
+kubectl get nodes
 ```
 
-Start Jenkins stack:
-
-```bash
-docker compose up --build -d jenkins docker-registry
-```
-
-Deploy manually to local Kubernetes:
+Build and load the app image into kind:
 
 ```bash
 docker build -t devops-case-study/demo-app:local ./app
-kind load docker-image devops-case-study/demo-app:local
+kind load docker-image devops-case-study/demo-app:local --name devops-demo
+```
+
+Deploy the app with Helm:
+
+```bash
 helm upgrade --install demo-app helm/demo-app \
   --set image.repository=devops-case-study/demo-app \
   --set image.tag=local \
   --set app.env=dev \
   --set app.version=local \
-  --atomic \
   --wait \
   --timeout 120s
 kubectl rollout status deployment/demo-app
-kubectl port-forward svc/demo-app 8080:80
 ```
 
-Deploy monitoring to the same Kubernetes cluster:
+Deploy Prometheus and Grafana into the same cluster:
 
 ```bash
+docker pull prom/prometheus:v2.54.1
+docker pull grafana/grafana:11.2.0
+kind load docker-image prom/prometheus:v2.54.1 --name devops-demo
+kind load docker-image grafana/grafana:11.2.0 --name devops-demo
 helm upgrade --install monitoring helm/monitoring \
-  --atomic \
   --wait \
   --timeout 180s
 kubectl rollout status deployment/prometheus
 kubectl rollout status deployment/grafana
+```
+
+Open services:
+
+```bash
+kubectl port-forward svc/demo-app 8080:80
 kubectl port-forward svc/grafana 3000:3000
 kubectl port-forward svc/prometheus 9090:9090
 ```
 
-Jenkins requires two credentials:
+### Deploy to Kubernetes automatically (use CI/CD of Jenkins)
+
+Start Jenkins and the local Docker registry:
+
+```bash
+docker compose up --build -d jenkins docker-registry
+```
+
+Create a Jenkins-specific kubeconfig for kind and upload it as a secret file credential with ID `kubeconfig`:
+
+```bash
+cp ~/.kube/config ./kubeconfig-jenkins
+sed -i 's#server: https://127.0.0.1:[0-9]*#server: https://devops-demo-control-plane:6443#' ./kubeconfig-jenkins
+```
+
+Jenkins requires these credentials:
 
 - `docker-registry-credentials` for external registry push.
 - `kubeconfig` as a secret file for Kubernetes deployment.
 
-For the included local registry, use `IMAGE_REPOSITORY=localhost:5000/demo-app`.
+Create a Pipeline job from SCM using the public GitHub repository and `Jenkinsfile`. Run `Build with Parameters`:
+
+- `IMAGE_REPOSITORY=localhost:5000/demo-app`
+- `KUBE_NAMESPACE=default`
+- `KIND_CLUSTER_NAME=devops-demo`
+- `LOAD_IMAGE_TO_KIND=true`
+- `DEPLOY_MONITORING=true`
+- `DEPLOY_ENV=dev`
+
+The Jenkins pipeline checks out code, runs tests, validates Helm charts, builds and pushes the Docker image, loads it into kind, deploys the app with Helm, and deploys monitoring with Helm. RollingUpdate and readiness probes protect traffic during deployment, and rollback is performed with Helm or Kubernetes rollout history if the release is unhealthy.
 
 ## 8. Design Decisions
 
-FastAPI was selected because it is small, easy to test, and can expose metrics without extra infrastructure. Helm was selected for CI/CD deployment because it provides release history, value overrides, and automatic rollback with `--atomic`. The Docker Compose stack includes Jenkins, an optional agent image, a local registry, app, Prometheus, and Grafana so the reviewer can run the whole demo locally.
+FastAPI was selected because it is small, easy to test, and can expose metrics without extra infrastructure. Helm was selected for CI/CD deployment because it provides release history, value overrides, and repeatable install/upgrade behavior. Docker Compose runs Jenkins and the local registry, while Helm deploys the app, Prometheus, and Grafana into the kind cluster.
 
 The repository keeps secrets out of source control. Jenkins credentials and kubeconfig are injected at runtime. This mirrors production CI/CD behavior while keeping the public repository safe.
