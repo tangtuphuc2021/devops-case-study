@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-provisioning
+  labels:
+    app.kubernetes.io/name: grafana
+    {{- include "monitoring.labels" . | nindent 4 }}
+data:
+  datasources.yml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        uid: Prometheus
+        access: proxy
+        url: http://prometheus:9090
+        isDefault: true
+  dashboards.yml: |
+    apiVersion: 1
+    providers:
+      - name: Demo App
+        orgId: 1
+        folder: Demo
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-demo-app
+  labels:
+    app.kubernetes.io/name: grafana
+    {{- include "monitoring.labels" . | nindent 4 }}
+data:
+  demo-app.json: |-
+{{ .Files.Get "dashboards/demo-app.json" | indent 4 }}

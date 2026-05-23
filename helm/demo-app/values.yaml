@@ -1,0 +1,46 @@
+replicaCount: 2
+
+image:
+  repository: localhost:5000/demo-app
+  tag: latest
+  pullPolicy: IfNotPresent
+
+app:
+  env: dev
+  version: latest
+  logLevel: info
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+
+deployment:
+  revisionHistoryLimit: 5
+  strategy:
+    maxSurge: 1
+    maxUnavailable: 0
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+probes:
+  readiness:
+    path: /ready
+    initialDelaySeconds: 5
+    periodSeconds: 10
+  liveness:
+    path: /health
+    initialDelaySeconds: 15
+    periodSeconds: 20
+
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70

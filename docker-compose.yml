@@ -1,0 +1,49 @@
+services:
+  demo-app:
+    build:
+      context: ./app
+    image: devops-case-study/demo-app:local
+    environment:
+      APP_ENV: local
+      APP_VERSION: local
+      LOG_LEVEL: info
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  docker-registry:
+    image: registry:2
+    ports:
+      - "5000:5000"
+    volumes:
+      - registry-data:/var/lib/registry
+
+  jenkins:
+    build:
+      context: ./jenkins/controller
+    user: root
+    ports:
+      - "8081:8080"
+      - "50000:50000"
+    environment:
+      JAVA_OPTS: -Djenkins.install.runSetupWizard=false
+      CASC_JENKINS_CONFIG: /var/jenkins_home/casc/jenkins.yaml
+    volumes:
+      - jenkins-home:/var/jenkins_home
+      - ./jenkins/casc:/var/jenkins_home/casc:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  jenkins-agent:
+    build:
+      context: ./jenkins/agent
+    profiles: ["agent"]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+volumes:
+  jenkins-home:
+  registry-data:

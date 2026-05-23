@@ -1,0 +1,11 @@
+workflow-aggregator
+pipeline-stage-view
+git
+configuration-as-code
+credentials
+credentials-binding
+docker-workflow
+junit
+ansicolor
+timestamper
+
