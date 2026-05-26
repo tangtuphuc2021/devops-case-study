@@ -9,7 +9,6 @@ prometheus:
   scrapeInterval: 15s
   targets:
     demoApp: demo-app:80
-    jenkins: host.docker.internal:8081
 
 nodeExporter:
   image:

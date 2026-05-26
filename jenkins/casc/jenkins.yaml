@@ -10,7 +10,7 @@ jenkins:
           password: "admin"
   authorizationStrategy:
     loggedInUsersCanDoAnything:
-      allowAnonymousRead: true
+      allowAnonymousRead: false
 unclassified:
   location:
     url: "http://localhost:8081/"

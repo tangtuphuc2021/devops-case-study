@@ -14,7 +14,7 @@
         "defaults": { "color": { "mode": "palette-classic" }, "unit": "reqps", "min": 0 },
         "overrides": []
       },
-      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 0 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
       "id": 1,
       "options": {
         "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
@@ -36,7 +36,7 @@
         "defaults": { "color": { "mode": "palette-classic" }, "unit": "ms", "min": 0 },
         "overrides": []
       },
-      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 0 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
       "id": 2,
       "options": {
         "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
@@ -55,56 +55,11 @@
     {
       "datasource": { "type": "prometheus", "uid": "Prometheus" },
       "fieldConfig": {
-        "defaults": { "color": { "mode": "thresholds" }, "mappings": [], "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }, "unit": "none" },
-        "overrides": []
-      },
-      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 7 },
-      "id": 3,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "center",
-        "orientation": "auto",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
-        "textMode": "value"
-      },
-      "pluginVersion": "11.2.0",
-      "targets": [
-        { "expr": "up{job=\"jenkins\"}", "legendFormat": "jenkins", "refId": "A" }
-      ],
-      "title": "Jenkins scrape health",
-      "type": "stat"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "Prometheus" },
-      "fieldConfig": {
-        "defaults": { "color": { "mode": "palette-classic" }, "unit": "ms", "min": 0 },
-        "overrides": []
-      },
-      "gridPos": { "h": 6, "w": 18, "x": 6, "y": 7 },
-      "id": 4,
-      "options": {
-        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
-        "tooltip": { "mode": "single", "sort": "none" }
-      },
-      "targets": [
-        {
-          "expr": "jenkins_job_last_build_duration_milliseconds",
-          "legendFormat": "{{jenkins_job}}",
-          "refId": "A"
-        }
-      ],
-      "title": "Jenkins last build duration",
-      "type": "timeseries"
-    },
-    {
-      "datasource": { "type": "prometheus", "uid": "Prometheus" },
-      "fieldConfig": {
         "defaults": { "color": { "mode": "palette-classic" }, "unit": "percent", "min": 0, "max": 100 },
         "overrides": []
       },
-      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 13 },
-      "id": 5,
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "id": 3,
       "options": {
         "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
         "tooltip": { "mode": "single", "sort": "none" }
@@ -125,8 +80,8 @@
         "defaults": { "color": { "mode": "palette-classic" }, "unit": "percent", "min": 0, "max": 100 },
         "overrides": []
       },
-      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 13 },
-      "id": 6,
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "id": 4,
       "options": {
         "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
         "tooltip": { "mode": "single", "sort": "none" }
@@ -151,6 +106,6 @@
   "timezone": "browser",
   "title": "DevOps Case Study Observability",
   "uid": "demo-app-observability",
-  "version": 2,
+  "version": 3,
   "weekStart": ""
 }

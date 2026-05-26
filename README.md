@@ -99,11 +99,13 @@ URLs:
 
 Grafana default login: `admin` / `admin`
 
-The dashboard includes three monitoring groups:
+The dashboard includes two monitoring groups:
 
 - Application: request rate and p95 latency.
-- Jenkins pipeline: Jenkins scrape health and last build duration.
 - System resources: node CPU and memory usage from node-exporter.
+
+Jenkins pipeline observability is shown in Jenkins itself through Stage View,
+build status, test trend, and console logs.
 
 ## Deploy to Kubernetes automatically (use CI/CD of Jenkins)
 
