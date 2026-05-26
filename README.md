@@ -65,8 +65,10 @@ scrapes the in-cluster Kubernetes service `demo-app:80`.
 ```bash
 docker pull prom/prometheus:v2.54.1
 docker pull grafana/grafana:11.2.0
+docker pull prom/node-exporter:v1.8.2
 kind load docker-image prom/prometheus:v2.54.1 --name devops-demo
 kind load docker-image grafana/grafana:11.2.0 --name devops-demo
+kind load docker-image prom/node-exporter:v1.8.2 --name devops-demo
 helm upgrade --install monitoring helm/monitoring \
   --wait \
   --timeout 180s
@@ -97,12 +99,20 @@ URLs:
 
 Grafana default login: `admin` / `admin`
 
+The dashboard includes three monitoring groups:
+
+- Application: request rate and p95 latency.
+- Jenkins pipeline: Jenkins scrape health and last build duration.
+- System resources: node CPU and memory usage from node-exporter.
+
 ## Deploy to Kubernetes automatically (use CI/CD of Jenkins)
 
-Start Jenkins and the local Docker registry:
+Start Jenkins and the local Docker registry. Rebuild Jenkins when plugin or
+tooling changes are pulled from Git:
 
 ```bash
-docker compose up --build -d jenkins jenkins-agent docker-registry
+docker compose build --no-cache jenkins
+docker compose up -d jenkins jenkins-agent docker-registry
 ```
 
 For kind, create a Jenkins-specific kubeconfig because `127.0.0.1` inside the

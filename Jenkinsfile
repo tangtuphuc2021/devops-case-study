@@ -139,6 +139,7 @@ pipeline {
 
             kubectl -n ${KUBE_NAMESPACE} rollout status deployment/prometheus --timeout=120s
             kubectl -n ${KUBE_NAMESPACE} rollout status deployment/grafana --timeout=120s
+            kubectl -n ${KUBE_NAMESPACE} rollout status daemonset/node-exporter --timeout=120s
           '''
         }
       }

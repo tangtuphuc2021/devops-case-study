@@ -9,6 +9,15 @@ prometheus:
   scrapeInterval: 15s
   targets:
     demoApp: demo-app:80
+    jenkins: host.docker.internal:8081
+
+nodeExporter:
+  image:
+    repository: prom/node-exporter
+    tag: v1.8.2
+    pullPolicy: IfNotPresent
+  service:
+    port: 9100
 
 grafana:
   image:

@@ -90,6 +90,8 @@ Or automatically through the Helm chart HPA template, which targets 70 percent C
 The app exposes Prometheus metrics via `/metrics`. The monitoring stack is deployed into the same kind cluster with the `helm/monitoring` chart:
 
 - `prometheus`: scrapes `demo-app:80/metrics` inside the cluster.
+- `prometheus`: scrapes Jenkins at `/prometheus` for pipeline metrics.
+- `node-exporter`: exposes node CPU, memory, filesystem, and host-level metrics.
 - `grafana`: uses Prometheus as a provisioned datasource.
 - `grafana-dashboard-demo-app`: provisions the demo dashboard from a ConfigMap.
 
@@ -97,6 +99,8 @@ Application metrics:
 
 - `demo_app_http_requests_total`
 - `demo_app_http_request_duration_seconds`
+
+Jenkins metrics are exposed by the Jenkins Prometheus plugin. System metrics are exposed by node-exporter.
 
 Important metrics:
 
@@ -106,8 +110,10 @@ Important metrics:
 - Pod CPU and memory usage.
 - Kubernetes restart count.
 - Jenkins build duration and failure rate.
+- Jenkins scrape health and last build duration.
+- Node CPU and memory usage from node-exporter.
 
-The current implementation focuses on application metrics and Prometheus self-monitoring. Jenkins pipeline observability is represented by Jenkins build status, build duration, and stage logs. In a production setup, Jenkins metrics can be added by installing the Jenkins Prometheus plugin and scraping the Jenkins `/prometheus` endpoint from Prometheus.
+The demo dashboard includes application request rate and p95 latency, Jenkins scrape health and last build duration, and system CPU/memory usage from node-exporter. Jenkins console logs remain the source of detailed stage-by-stage troubleshooting.
 
 Alert examples:
 
@@ -181,8 +187,10 @@ Deploy Prometheus and Grafana into the same cluster:
 ```bash
 docker pull prom/prometheus:v2.54.1
 docker pull grafana/grafana:11.2.0
+docker pull prom/node-exporter:v1.8.2
 kind load docker-image prom/prometheus:v2.54.1 --name devops-demo
 kind load docker-image grafana/grafana:11.2.0 --name devops-demo
+kind load docker-image prom/node-exporter:v1.8.2 --name devops-demo
 helm upgrade --install monitoring helm/monitoring \
   --wait \
   --timeout 180s
