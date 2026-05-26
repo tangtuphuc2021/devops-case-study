@@ -108,7 +108,7 @@ Important metrics:
 - p95/p99 latency.
 - Pod CPU and memory usage.
 - Kubernetes restart count.
-- Jenkins build duration and failure rate.
+- Jenkins pipeline status, failed stages, test trend, and stage duration from Jenkins UI.
 - Node CPU and memory usage from node-exporter.
 
 The demo dashboard includes application request rate and p95 latency plus system CPU/memory usage from node-exporter. Jenkins pipeline observability is shown directly in Jenkins through Stage View, build status, test trend, and console logs.
